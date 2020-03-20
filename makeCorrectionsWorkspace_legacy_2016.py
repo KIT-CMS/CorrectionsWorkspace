@@ -596,6 +596,8 @@ w.factory('expr::m_sel_id_ic_ratio("min(1./@0,20)", m_sel_id_ic_data)')
 
 ### Tau Trigger scale factors from Tau POG
 
+# MVA ID SFs
+
 loc = 'inputs/2016/TauPOGTriggerSFs/'
 tau_trg_file = ROOT.TFile(loc+'tauTriggerEfficiencies2016.root')
 w.factory('expr::t_pt_trig("min(max(@0,20),450)" ,t_pt[0])')
@@ -667,6 +669,129 @@ for wp in tau_id_wps:
     w.factory('expr::t_trg_%s_%s_ratio_up("(sqrt(pow((@0-@1)/@1,2) + pow((@2-@3)/@3,2))+1.)*@4",t_trg_%s_%s_data_up, t_trg_%s_%s_data, t_trg_%s_%s_mc_up, t_trg_%s_%s_mc, t_trg_%s_%s_ratio)' % (wp, y, wp, y, wp, y, wp, y, wp, y, wp, y))
 
     w.factory('expr::t_trg_%s_%s_ratio_down("(1.-sqrt(pow((@1-@0)/@1,2) + pow((@3-@2)/@3,2)))*@4",t_trg_%s_%s_data_down, t_trg_%s_%s_data, t_trg_%s_%s_mc_down, t_trg_%s_%s_mc, t_trg_%s_%s_ratio)' % (wp, y, wp, y, wp, y, wp, y, wp, y, wp, y))
+
+# deepTau ID SFs
+
+loc = 'inputs/2016/TauPOGTriggerSFs/'
+tau_trg_file = ROOT.TFile(loc+'2016_tauTriggerEff_DeepTau2017v2p1.root')
+#tau_id_wps=['VVVLoose','VVLoose','VLoose','Loose','Medium','Tight','VTight','VVTight']
+tau_id_wps=['Medium']#,'Tight']
+
+for wp in tau_id_wps:
+  for dm in ['0','1','10',11]:
+
+    histsToWrap = [
+      (loc+'2016_tauTriggerEff_DeepTau2017v2p1.root:data_ditau_%s_dm%s_fitted' % (wp,dm),  't_trg_pog_deeptau_%s_ditau_dm%s_data' % (wp.lower(),dm)),
+      (loc+'2016_tauTriggerEff_DeepTau2017v2p1.root:mc_ditau_%s_dm%s_fitted' % (wp,dm),  't_trg_pog_deeptau_%s_ditau_dm%s_mc' % (wp.lower(),dm)),
+      (loc+'2016_tauTriggerEff_DeepTau2017v2p1.root:sf_ditau_%s_dm%s_fitted' % (wp,dm),  't_trg_pog_deeptau_%s_ditau_dm%s_ratio' % (wp.lower(),dm)),
+      (loc+'2016_tauTriggerEff_DeepTau2017v2p1.root:data_mutau_%s_dm%s_fitted' % (wp,dm),  't_trg_pog_deeptau_%s_mutau_dm%s_data' % (wp.lower(),dm)),
+      (loc+'2016_tauTriggerEff_DeepTau2017v2p1.root:mc_mutau_%s_dm%s_fitted' % (wp,dm),  't_trg_pog_deeptau_%s_mutau_dm%s_mc' % (wp.lower(),dm)),
+      (loc+'2016_tauTriggerEff_DeepTau2017v2p1.root:sf_mutau_%s_dm%s_fitted' % (wp,dm),  't_trg_pog_deeptau_%s_mutau_dm%s_ratio' % (wp.lower(),dm)),
+      (loc+'2016_tauTriggerEff_DeepTau2017v2p1.root:data_etau_%s_dm%s_fitted' % (wp,dm),  't_trg_pog_deeptau_%s_etau_dm%s_data' % (wp.lower(),dm)),
+      (loc+'2016_tauTriggerEff_DeepTau2017v2p1.root:mc_etau_%s_dm%s_fitted' % (wp,dm),  't_trg_pog_deeptau_%s_etau_dm%s_mc' % (wp.lower(),dm)),
+      (loc+'2016_tauTriggerEff_DeepTau2017v2p1.root:sf_etau_%s_dm%s_fitted' % (wp,dm),  't_trg_pog_deeptau_%s_etau_dm%s_ratio' % (wp.lower(),dm)),
+    ]
+
+    for task in histsToWrap:
+        wsptools.SafeWrapHist(w, ['t_pt'],
+                              GetFromTFile(task[0]), name=task[1])
+
+        hist = GetFromTFile(task[0])
+        uncert_hists = wsptools.UncertsFromHist(hist)
+        wsptools.SafeWrapHist(w, ['t_pt'], uncert_hists[0], name=task[1]+'_up')
+        wsptools.SafeWrapHist(w, ['t_pt'], uncert_hists[1], name=task[1]+'_down')
+
+  wp_lower = wp.lower()
+  for i in ['data','mc','ratio']:
+    for j in ['ditau','mutau', 'etau']:
+      w.factory('expr::t_trg_pog_deeptau_%(wp_lower)s_%(j)s_%(i)s("(@0==0)*@1 + (@0==1)*@2 + (@0==10||@0==5)*@3 + (@0==11||@0==6)*@4", t_dm[0], t_trg_pog_deeptau_%(wp_lower)s_%(j)s_dm0_%(i)s, t_trg_pog_deeptau_%(wp_lower)s_%(j)s_dm1_%(i)s, t_trg_pog_deeptau_%(wp_lower)s_%(j)s_dm10_%(i)s, t_trg_pog_deeptau_%(wp_lower)s_%(j)s_dm11_%(i)s)' % vars())
+
+      w.factory('expr::t_trg_pog_deeptau_%(wp_lower)s_%(j)s_%(i)s_up("@5 + ((@0==0)*@1 + (@0==1)*@2 + (@0==10||@0==5)*@3 + (@0==11||@0==6)*@4)", t_dm[0], t_trg_pog_deeptau_%(wp_lower)s_%(j)s_dm0_%(i)s_up, t_trg_pog_deeptau_%(wp_lower)s_%(j)s_dm1_%(i)s_up, t_trg_pog_deeptau_%(wp_lower)s_%(j)s_dm10_%(i)s_up, t_trg_pog_deeptau_%(wp_lower)s_%(j)s_dm11_%(i)s_up, t_trg_pog_deeptau_%(wp_lower)s_%(j)s_%(i)s)' % vars())
+
+      w.factory('expr::t_trg_pog_deeptau_%(wp_lower)s_%(j)s_%(i)s_down("@5 - ((@0==0)*@1 + (@0==1)*@2 + (@0==10||@0==5)*@3 + (@0==11||@0==6)*@4)", t_dm[0], t_trg_pog_deeptau_%(wp_lower)s_%(j)s_dm0_%(i)s_down, t_trg_pog_deeptau_%(wp_lower)s_%(j)s_dm1_%(i)s_down, t_trg_pog_deeptau_%(wp_lower)s_%(j)s_dm10_%(i)s_down, t_trg_pog_deeptau_%(wp_lower)s_%(j)s_dm11_%(i)s_down, t_trg_pog_deeptau_%(wp_lower)s_%(j)s_%(i)s)' % vars())
+
+      for dm in ['0','1','10','11']:
+        w.factory('expr::t_trg_pog_deeptau_%(wp_lower)s_%(j)s_%(i)s_dm%(dm)s_down("(@0==%(dm)s)*@1 + (@0!=%(dm)s)*@2",t_dm[0], t_trg_pog_deeptau_%(wp_lower)s_%(j)s_%(i)s_down, t_trg_pog_deeptau_%(wp_lower)s_%(j)s_%(i)s)' % vars())
+        w.factory('expr::t_trg_pog_deeptau_%(wp_lower)s_%(j)s_%(i)s_dm%(dm)s_up("(@0==%(dm)s)*@1 + (@0!=%(dm)s)*@2",t_dm[0], t_trg_pog_deeptau_%(wp_lower)s_%(j)s_%(i)s_up, t_trg_pog_deeptau_%(wp_lower)s_%(j)s_%(i)s)' % vars())
+
+## IC tau trigger SFs in bins of DM and MVA-DM
+
+loc = 'inputs/IC_tau_trigger/'
+tau_trg_file = ROOT.TFile(loc+'trigger_SF_tauh.root')
+tau_id_wps=['medium']
+
+for wp in tau_id_wps:
+  for chan in ['mt','tt']:
+    for dm in ['0','1','2','10',11]:
+      if chan == 'et': chan_name = 'etau'
+      if chan == 'mt': chan_name = 'mutau'
+      if chan == 'tt': chan_name = 'ditau'
+
+      if not dm=='2':
+        histsToWrap = [
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingMCSamples_HPSDM_%(dm)s_EffOfData_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_dm%(dm)s_data' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingMCSamples_HPSDM_%(dm)s_EffOfMC_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_dm%(dm)s_mc' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingMCSamples_HPSDM_%(dm)s_SF_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_dm%(dm)s_ratio' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingembedSamples_HPSDM_%(dm)s_EffOfData_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_dm%(dm)s_embed_data' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingembedSamples_HPSDM_%(dm)s_EffOfMC_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_dm%(dm)s_embed' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingembedSamples_HPSDM_%(dm)s_SF_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_dm%(dm)s_embed_ratio' % vars()),
+        ]
+
+      if dm in ['1','2']:
+        histsToWrap += [
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingMCSamples_mvaDM_%(dm)s_NoHPS0_EffOfData_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_mvadm%(dm)s_data' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingMCSamples_mvaDM_%(dm)s_NoHPS0_EffOfMC_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_mvadm%(dm)s_mc' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingMCSamples_mvaDM_%(dm)s_NoHPS0_SF_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_mvadm%(dm)s_ratio' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingembedSamples_mvaDM_%(dm)s_NoHPS0_EffOfData_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_mvadm%(dm)s_embed_data' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingembedSamples_mvaDM_%(dm)s_NoHPS0_EffOfMC_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_mvadm%(dm)s_embed' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingembedSamples_mvaDM_%(dm)s_NoHPS0_SF_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_mvadm%(dm)s_embed_ratio' % vars()),
+        ]
+      else:
+        histsToWrap += [
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingMCSamples_mvaDM_%(dm)s_EffOfData_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_mvadm%(dm)s_data' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingMCSamples_mvaDM_%(dm)s_EffOfMC_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_mvadm%(dm)s_mc' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingMCSamples_mvaDM_%(dm)s_SF_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_mvadm%(dm)s_ratio' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingembedSamples_mvaDM_%(dm)s_EffOfData_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_mvadm%(dm)s_embed_data' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingembedSamples_mvaDM_%(dm)s_EffOfMC_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_mvadm%(dm)s_embed' % vars()),
+          (loc+'trigger_SF_tauh.root:%(chan)sChannel_2016_PredUsingembedSamples_mvaDM_%(dm)s_SF_Fitted' % vars(), 't_trg_ic_deeptau_%(wp)s_%(chan_name)s_mvadm%(dm)s_embed_ratio' % vars()),
+        ]
+
+      for task in histsToWrap:
+          wsptools.SafeWrapHist(w, ['t_pt'],
+                                GetFromTFile(task[0]), name=task[1])
+
+          hist = GetFromTFile(task[0])
+          uncert_hists = wsptools.UncertsFromHist(hist)
+          wsptools.SafeWrapHist(w, ['t_pt'], uncert_hists[0], name=task[1]+'_up')
+          wsptools.SafeWrapHist(w, ['t_pt'], uncert_hists[1], name=task[1]+'_down')
+
+  wp_lower = wp.lower()
+  for i in ['data','mc','ratio','embed_data','embed','embed_ratio']:
+    for j in ['ditau','mutau', 'etau']:
+      w.factory('expr::t_trg_ic_deeptau_%(wp_lower)s_%(j)s_%(i)s("(@0==0)*@1 + (@0==1)*@2 + (@0==10||@0==5)*@3 + (@0==11||@0==6)*@4", t_dm[0], t_trg_ic_deeptau_%(wp_lower)s_%(j)s_dm0_%(i)s, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_dm1_%(i)s, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_dm10_%(i)s, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_dm11_%(i)s)' % vars())
+
+      w.factory('expr::t_trg_ic_deeptau_%(wp_lower)s_%(j)s_%(i)s_up("@5 + ((@0==0)*@1 + (@0==1)*@2 + (@0==10||@0==5)*@3 + (@0==11||@0==6)*@4)", t_dm[0], t_trg_ic_deeptau_%(wp_lower)s_%(j)s_dm0_%(i)s_up, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_dm1_%(i)s_up, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_dm10_%(i)s_up, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_dm11_%(i)s_up, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_%(i)s)' % vars())
+
+      w.factory('expr::t_trg_ic_deeptau_%(wp_lower)s_%(j)s_%(i)s_down("@5 - ((@0==0)*@1 + (@0==1)*@2 + (@0==10||@0==5)*@3 + (@0==11||@0==6)*@4)", t_dm[0], t_trg_ic_deeptau_%(wp_lower)s_%(j)s_dm0_%(i)s_down, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_dm1_%(i)s_down, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_dm10_%(i)s_down, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_dm11_%(i)s_down, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_%(i)s)' % vars())
+
+      for dm in ['0','1','10','11']:
+
+        w.factory('expr::t_trg_ic_deeptau_%(wp_lower)s_%(j)s_%(i)s_dm%(dm)s_down("(@0==%(dm)s)*@1 + (@0!=%(dm)s)*@2",t_dm[0], t_trg_ic_deeptau_%(wp_lower)s_%(j)s_%(i)s_down, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_%(i)s)' % vars())
+        w.factory('expr::t_trg_ic_deeptau_%(wp_lower)s_%(j)s_%(i)s_dm%(dm)s_up("(@0==%(dm)s)*@1 + (@0!=%(dm)s)*@2",t_dm[0], t_trg_ic_deeptau_%(wp_lower)s_%(j)s_%(i)s_up, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_%(i)s)' % vars())
+
+      # MVA-DM version ### doesnt work from here!!!
+#t_trg_ic_deeptau_medium_ditau_mvadm_data
+
+      w.factory('expr::t_trg_ic_deeptau_%(wp_lower)s_mvadm_%(j)s_%(i)s("(@0==0)*@1 + (@0==1)*@2 + (@0==10||@0==5)*@3 + (@0==11||@0==6)*@4 + (@0==2)*@5", t_mvadm[0], t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm0_%(i)s, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm1_%(i)s, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm10_%(i)s, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm11_%(i)s, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm2_%(i)s)' % vars())
+
+      w.factory('expr::t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm_%(i)s_up("@6 + ((@0==0)*@1 + (@0==1)*@2 + (@0==10||@0==5)*@3 + (@0==11||@0==6)*@4) + (@0==2)*@5", t_mvadm[0], t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm0_%(i)s_up, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm1_%(i)s_up, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm10_%(i)s_up, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm11_%(i)s_up, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm2_%(i)s_up,t_trg_ic_deeptau_%(wp_lower)s_mvadm_%(j)s_%(i)s)' % vars())
+
+      w.factory('expr::t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm_%(i)s_down("@6 - ((@0==0)*@1 + (@0==1)*@2 + (@0==10||@0==5)*@3 + (@0==11||@0==6)*@4 + (@0==2)*@5)", t_mvadm[0], t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm0_%(i)s_down, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm1_%(i)s_down, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm10_%(i)s_down, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm11_%(i)s_down, t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm2_%(i)s_down,t_trg_ic_deeptau_%(wp_lower)s_mvadm_%(j)s_%(i)s)' % vars())
+
+      for dm in ['0','1','2','10','11']:
+        w.factory('expr::t_trg_ic_deeptau_%(wp_lower)s_mvadm_%(j)s_%(i)s_mvadm%(dm)s_down("(@0==%(dm)s)*@1 + (@0!=%(dm)s)*@2",t_mvadm[0], t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm_%(i)s_down, t_trg_ic_deeptau_%(wp_lower)s_mvadm_%(j)s_%(i)s)' % vars())
+        w.factory('expr::t_trg_ic_deeptau_%(wp_lower)s_mvadm_%(j)s_%(i)s_mvadm%(dm)s_up("(@0==%(dm)s)*@1 + (@0!=%(dm)s)*@2",t_mvadm[0], t_trg_ic_deeptau_%(wp_lower)s_%(j)s_mvadm_%(i)s_up, t_trg_ic_deeptau_%(wp_lower)s_mvadm_%(j)s_%(i)s)' % vars()) 
+
 
 ### Tau Trigger scale factors from KIT - for using with deeptau IDs and for embedded samples
 
@@ -787,8 +912,8 @@ for task in histsToWrap:
   uncert_hists = wsptools.UncertsFromHist(GetFromTFile(task[0]))
   wsptools.SafeWrapHist(w, ['t_dm_bounded'], uncert_hists[0], name=task[1]+'_abs_up')
   wsptools.SafeWrapHist(w, ['t_dm_bounded'], uncert_hists[1], name=task[1]+'_abs_down')
-  w.factory('expr::%s_up("1.+@0/@1",%s_abs_up,%s)' % (task[1],task[1],task[1]))
-  w.factory('expr::%s_down("1.-@0/@1",%s_abs_down,%s)' % (task[1],task[1],task[1]))
+  w.factory('expr::%s_up("@1+@0",%s_abs_up,%s)' % (task[1],task[1],task[1]))
+  w.factory('expr::%s_down("@1-@0",%s_abs_down,%s)' % (task[1],task[1],task[1]))
 
 # pT dependent SFs
 
@@ -831,7 +956,15 @@ histsToWrap = [
   (loc+'/TauID_SF_dm_DeepTau2017v2p1VSjet_2016Legacy.root:Medium',   't_deeptauid_dm_medium'),
   (loc+'/TauID_SF_dm_DeepTau2017v2p1VSjet_2016Legacy.root:Tight',    't_deeptauid_dm_tight'),
   (loc+'/TauID_SF_dm_DeepTau2017v2p1VSjet_2016Legacy.root:VTight',   't_deeptauid_dm_vtight'),
-  (loc+'/TauID_SF_dm_DeepTau2017v2p1VSjet_2016Legacy.root:VVTight',  't_deeptauid_dm_vvtight')
+  (loc+'/TauID_SF_dm_DeepTau2017v2p1VSjet_2016Legacy.root:VVTight',  't_deeptauid_dm_vvtight'),
+  (loc+'/TauID_SF_dm_DeepTau2017v2p1VSjet_2016Legacy_EMB.root:VVVLoose', 't_deeptauid_dm_embed_vvvloose'),
+  (loc+'/TauID_SF_dm_DeepTau2017v2p1VSjet_2016Legacy_EMB.root:VVLoose',  't_deeptauid_dm_embed_vvloose'),
+  (loc+'/TauID_SF_dm_DeepTau2017v2p1VSjet_2016Legacy_EMB.root:VLoose',   't_deeptauid_dm_embed_vloose'),
+  (loc+'/TauID_SF_dm_DeepTau2017v2p1VSjet_2016Legacy_EMB.root:Loose',    't_deeptauid_dm_embed_loose'),
+  (loc+'/TauID_SF_dm_DeepTau2017v2p1VSjet_2016Legacy_EMB.root:Medium',   't_deeptauid_dm_embed_medium'),
+  (loc+'/TauID_SF_dm_DeepTau2017v2p1VSjet_2016Legacy_EMB.root:Tight',    't_deeptauid_dm_embed_tight'),
+  (loc+'/TauID_SF_dm_DeepTau2017v2p1VSjet_2016Legacy_EMB.root:VTight',   't_deeptauid_dm_embed_vtight'),
+  (loc+'/TauID_SF_dm_DeepTau2017v2p1VSjet_2016Legacy_EMB.root:VVTight',  't_deeptauid_dm_embed_vvtight')
 ]
 
 for task in histsToWrap:
@@ -839,8 +972,8 @@ for task in histsToWrap:
   uncert_hists = wsptools.UncertsFromHist(GetFromTFile(task[0]))
   wsptools.SafeWrapHist(w, ['t_dm_bounded'], uncert_hists[0], name=task[1]+'_abs_up')
   wsptools.SafeWrapHist(w, ['t_dm_bounded'], uncert_hists[1], name=task[1]+'_abs_down')
-  w.factory('expr::%s_up("1.+@0/@1",%s_abs_up,%s)' % (task[1],task[1],task[1]))
-  w.factory('expr::%s_down("1.-@0/@1",%s_abs_down,%s)' % (task[1],task[1],task[1]))
+  w.factory('expr::%s_up("@1+@0",%s_abs_up,%s)' % (task[1],task[1],task[1]))
+  w.factory('expr::%s_down("@1-@0",%s_abs_down,%s)' % (task[1],task[1],task[1]))
 
   w.factory('expr::%s_dm0_up("(@0==0)*@1 + (@0!=0)*@2 ", t_dm[0], %s_up, %s)' % (task[1],task[1],task[1]))
   w.factory('expr::%s_dm0_down("(@0==0)*@1 + (@0!=0)*@2 ", t_dm[0], %s_down, %s)' % (task[1],task[1],task[1]))
@@ -857,7 +990,7 @@ for task in histsToWrap:
 # pT dependent SFs
 
 sf_funcs = {}
-tauid_pt_file = ROOT.TFile(loc+'/TauID_SF_pt_DeepTau2017v2p1_2016.root')
+tauid_pt_file = ROOT.TFile(loc+'/TauID_SF_pt_DeepTau2017v2p1VSjet_2016Legacy.root')
 for i in ['VVVLoose', 'VVLoose', 'VLoose', 'Loose', 'Medium', 'Tight', 'VTight', 'VVTight']:
   for j in ['cent', 'up', 'down']:
     fname = '%s_%s' % (i,j)
@@ -885,6 +1018,134 @@ for i in ['vvvloose', 'vvloose', 'vloose', 'loose', 'medium', 'tight', 'vtight',
 
   w.factory('expr::t_deeptauid_pt_%(i)s_bin5_up("(@0>40&&@0<=500)*@1 + ((@0>40&&@0<=500)==0)*@2",t_pt[0], t_deeptauid_pt_%(i)s_up, t_deeptauid_pt_%(i)s)' % vars())
   w.factory('expr::t_deeptauid_pt_%(i)s_bin5_down("(@0>40&&@0<=500)*@1 + ((@0>40&&@0<=500)==0)*@2",t_pt[0], t_deeptauid_pt_%(i)s_down, t_deeptauid_pt_%(i)s)' % vars())
+
+# embedded SFs
+
+sf_funcs = {}
+
+sf_funcs = {}
+tauid_pt_file = ROOT.TFile(loc+'/TauID_SF_pt_DeepTau2017v2p1VSjet_2016Legacy_EMB.root')
+for i in ['VVVLoose', 'VVLoose', 'VLoose', 'Loose', 'Medium', 'Tight', 'VTight', 'VVTight']:
+  for j in ['cent', 'up', 'down']:
+    fname = '%s_%s' % (i,j)
+    fit = tauid_pt_file.Get(fname)
+    outname = i.lower()
+    if j != 'cent': outname+='_%s' % j
+    sf_funcs[outname] = fit.GetTitle()
+
+
+for x in sf_funcs:
+  func = re.sub('x','@0',sf_funcs[x])
+  w.factory('expr::t_deeptauid_pt_embed_%s("%s",t_pt[0])' % (x, func))
+
+for i in ['vvvloose', 'vvloose', 'vloose', 'loose', 'medium', 'tight', 'vtight', 'vvtight']:
+  w.factory('expr::t_deeptauid_pt_embed_%(i)s_bin1_up("(@0>20&&@0<=25)*@1 + ((@0>20&&@0<=25)==0)*@2",t_pt[0], t_deeptauid_pt_embed_%(i)s_up, t_deeptauid_pt_embed_%(i)s)' % vars())
+  w.factory('expr::t_deeptauid_pt_embed_%(i)s_bin1_down("(@0>20&&@0<=25)*@1 + ((@0>20&&@0<=25)==0)*@2",t_pt[0], t_deeptauid_pt_embed_%(i)s_down, t_deeptauid_pt_embed_%(i)s)' % vars())
+  w.factory('expr::t_deeptauid_pt_embed_%(i)s_bin2_up("(@0>25&&@0<=30)*@1 + ((@0>25&&@0<=30)==0)*@2",t_pt[0], t_deeptauid_pt_embed_%(i)s_up, t_deeptauid_pt_embed_%(i)s)' % vars())
+  w.factory('expr::t_deeptauid_pt_embed_%(i)s_bin2_down("(@0>25&&@0<=30)*@1 + ((@0>25&&@0<=30)==0)*@2",t_pt[0], t_deeptauid_pt_embed_%(i)s_down, t_deeptauid_pt_embed_%(i)s)' % vars())
+  w.factory('expr::t_deeptauid_pt_embed_%(i)s_bin3_up("(@0>30&&@0<=35)*@1 + ((@0>30&&@0<=35)==0)*@2",t_pt[0], t_deeptauid_pt_embed_%(i)s_up, t_deeptauid_pt_embed_%(i)s)' % vars())
+  w.factory('expr::t_deeptauid_pt_embed_%(i)s_bin3_down("(@0>30&&@0<=35)*@1 + ((@0>30&&@0<=35)==0)*@2",t_pt[0], t_deeptauid_pt_embed_%(i)s_down, t_deeptauid_pt_embed_%(i)s)' % vars())
+  w.factory('expr::t_deeptauid_pt_embed_%(i)s_bin4_up("(@0>35&&@0<=40)*@1 + ((@0>35&&@0<=40)==0)*@2",t_pt[0], t_deeptauid_pt_embed_%(i)s_up, t_deeptauid_pt_embed_%(i)s)' % vars())
+  w.factory('expr::t_deeptauid_pt_embed_%(i)s_bin4_down("(@0>35&&@0<=40)*@1 + ((@0>35&&@0<=40)==0)*@2",t_pt[0], t_deeptauid_pt_embed_%(i)s_down, t_deeptauid_pt_embed_%(i)s)' % vars())
+  w.factory('expr::t_deeptauid_pt_embed_%(i)s_bin5_up("(@0>40&&@0<=500)*@1 + ((@0>40&&@0<=500)==0)*@2",t_pt[0], t_deeptauid_pt_embed_%(i)s_up, t_deeptauid_pt_embed_%(i)s)' % vars())
+  w.factory('expr::t_deeptauid_pt_embed_%(i)s_bin5_down("(@0>40&&@0<=500)*@1 + ((@0>40&&@0<=500)==0)*@2",t_pt[0], t_deeptauid_pt_embed_%(i)s_down, t_deeptauid_pt_embed_%(i)s)' % vars())
+
+# extra SFs for tight anti-electron ID
+sf_funcs = {}
+tauid_pt_file = ROOT.TFile(loc+'/TauID_SF_pt_DeepTau2017v2p1VSjet_2016Legacy_tight_antie_EMB.root')
+for i in ['VVVLoose', 'VVLoose', 'VLoose', 'Loose', 'Medium', 'Tight', 'VTight', 'VVTight']:
+  for j in ['cent', 'up', 'down']:
+    fname = '%s_%s' % (i,j)
+    fit = tauid_pt_file.Get(fname)
+    outname = i.lower()
+    if j != 'cent': outname+='_%s' % j
+    sf_funcs[outname] = fit.GetTitle()
+
+
+for x in sf_funcs:
+  func = re.sub('x','@0',sf_funcs[x])
+  w.factory('expr::t_deeptauid_pt_tightvse_embed_%s("%s",t_pt[0])' % (x, func))
+
+
+histsToWrap = [
+  ('inputs/2016/tauIDSF/result_TauIDSF_ttAndmt_MC_2016.root:h_MVA_lowpt', 't_deeptauid_mvadm_medium_lowpt'),
+  ('inputs/2016/tauIDSF/result_TauIDSF_ttAndmt_MC_2016.root:h_MVA_highpt', 't_deeptauid_mvadm_medium_highpt'),
+  ('inputs/2016/tauIDSF/result_TauIDSF_ttAndmt_embed_2016.root:h_MVA_lowpt', 't_deeptauid_mvadm_embed_medium_lowpt'),
+  ('inputs/2016/tauIDSF/result_TauIDSF_ttAndmt_embed_2016.root:h_MVA_highpt', 't_deeptauid_mvadm_embed_medium_highpt'),
+]
+
+for task in histsToWrap:
+  wsptools.SafeWrapHist(w, ['t_mvadm'], GetFromTFile(task[0]), name=task[1])
+  uncert_hists = wsptools.UncertsFromHist(GetFromTFile(task[0]))
+  wsptools.SafeWrapHist(w, ['t_mvadm'], uncert_hists[0], name=task[1]+'_abs_up')
+  wsptools.SafeWrapHist(w, ['t_mvadm'], uncert_hists[1], name=task[1]+'_abs_down')
+  w.factory('expr::%s_up("@1+@0",%s_abs_up,%s)' % (task[1],task[1],task[1]))
+  w.factory('expr::%s_down("@1-@0",%s_abs_down,%s)' % (task[1],task[1],task[1]))
+
+
+w.factory('expr::t_deeptauid_mvadm_medium("(@0<40)*(@1) + (@0>=40)*(@2)", t_pt, t_deeptauid_mvadm_medium_lowpt, t_deeptauid_mvadm_medium_highpt)' % vars()) 
+w.factory('expr::t_deeptauid_mvadm_embed_medium("(@0<40)*(@1) + (@0>=40)*(@2)", t_pt, t_deeptauid_mvadm_embed_medium_lowpt, t_deeptauid_mvadm_embed_medium_highpt)' % vars()) 
+
+w.factory('expr::t_deeptauid_mvadm_medium_up("(@0<40)*(@1) + (@0>=40)*(@2)", t_pt, t_deeptauid_mvadm_medium_lowpt_abs_up, t_deeptauid_mvadm_medium_highpt_abs_up)' % vars())   
+w.factory('expr::t_deeptauid_mvadm_embed_medium_up("(@0<40)*(@1) + (@0>=40)*(@2)", t_pt, t_deeptauid_mvadm_embed_medium_lowpt_abs_up, t_deeptauid_mvadm_embed_medium_highpt_abs_up)' % vars()) 
+
+w.factory('expr::t_deeptauid_mvadm_medium_down("(@0<40)*(@1) + (@0>=40)*(@2)", t_pt, t_deeptauid_mvadm_medium_lowpt_abs_down, t_deeptauid_mvadm_medium_highpt_abs_down)' % vars())
+w.factory('expr::t_deeptauid_mvadm_embed_medium_down("(@0<40)*(@1) + (@0>=40)*(@2)", t_pt, t_deeptauid_mvadm_embed_medium_lowpt_abs_down, t_deeptauid_mvadm_embed_medium_highpt_abs_down)' % vars())
+
+
+for i in ['','embed_']:
+
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_lowpt_mvadm0_up("(@3<40)*((@0==0)*(@2+@1) + (@0!=0)*@2 ) +(@3>=40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_up, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_lowpt_mvadm0_down("(@3<40)*((@0==0)*(@2-@1) + (@0!=0)*@2 ) +(@3>=40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_down, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_lowpt_mvadm1_up("(@3<40)*((@0==1)*(@2+@1) + (@0!=1)*@2 ) +(@3>=40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_up, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_lowpt_mvadm1_down("(@3<40)*((@0==1)*(@2-@1) + (@0!=1)*@2 ) +(@3>=40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_down, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_lowpt_mvadm2_up("(@3<40)*((@0==2)*(@2+@1) + (@0!=2)*@2 ) +(@3>=40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_up, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_lowpt_mvadm2_down("(@3<40)*((@0==2)*(@2-@1) + (@0!=2)*@2 ) +(@3>=40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_down, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_lowpt_mvadm10_up("(@3<40)*((@0==10)*(@2+@1) + (@0!=10)*@2 ) +(@3>=40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_up, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_lowpt_mvadm10_down("(@3<40)*((@0==10)*(@2-@1) + (@0!=10)*@2 ) +(@3>=40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_down, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_lowpt_mvadm11_up("(@3<40)*((@0==11)*(@2+@1) + (@0!=11)*@2 ) +(@3>=40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_up, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_lowpt_mvadm11_down("(@3<40)*((@0==11)*(@2-@1) + (@0!=11)*@2 ) +(@3>=40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_down, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_highpt_mvadm0_up("(@3>=40)*((@0==0)*(@2+@1) + (@0!=0)*@2 ) +(@3<40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_up, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_highpt_mvadm0_down("(@3>=40)*((@0==0)*(@2-@1) + (@0!=0)*@2 ) +(@3<40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_down, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_highpt_mvadm1_up("(@3>=40)*((@0==1)*(@2+@1) + (@0!=1)*@2 ) +(@3<40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_up, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_highpt_mvadm1_down("(@3>=40)*((@0==1)*(@2-@1) + (@0!=1)*@2 ) +(@3<40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_down, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_highpt_mvadm2_up("(@3>=40)*((@0==2)*(@2+@1) + (@0!=2)*@2 ) +(@3<40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_up, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_highpt_mvadm2_down("(@3>=40)*((@0==2)*(@2-@1) + (@0!=2)*@2 ) +(@3<40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_down, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_highpt_mvadm10_up("(@3>=40)*((@0==10)*(@2+@1) + (@0!=10)*@2 ) +(@3<40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_up, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_highpt_mvadm10_down("(@3>=40)*((@0==10)*(@2-@1) + (@0!=10)*@2 ) +(@3<40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_down, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_highpt_mvadm11_up("(@3>=40)*((@0==11)*(@2+@1) + (@0!=11)*@2 ) +(@3<40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_up, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+  w.factory('expr::t_deeptauid_mvadm_%(i)smedium_highpt_mvadm11_down("(@3>=40)*((@0==11)*(@2-@1) + (@0!=11)*@2 ) +(@3<40)*@2", t_mvadm[0], t_deeptauid_mvadm_%(i)smedium_down, t_deeptauid_mvadm_%(i)smedium, t_pt)' % vars())
+
+
+# l->tau fake scale factors
+
+loc='inputs/2016/TauPOGIDSFs/'
+
+histsToWrap = [
+  (loc+'/TauID_SF_eta_DeepTau2017v2p1VSe_2016Legacy.root:VVLoose', 't_id_vs_e_eta_vvloose'),
+  (loc+'/TauID_SF_eta_DeepTau2017v2p1VSe_2016Legacy.root:VLoose', 't_id_vs_e_eta_vloose'),
+  (loc+'/TauID_SF_eta_DeepTau2017v2p1VSe_2016Legacy.root:Loose',  't_id_vs_e_eta_loose'),
+  (loc+'/TauID_SF_eta_DeepTau2017v2p1VSe_2016Legacy.root:Medium', 't_id_vs_e_eta_medium'),
+  (loc+'/TauID_SF_eta_DeepTau2017v2p1VSe_2016Legacy.root:Tight',  't_id_vs_e_eta_tight'),
+  (loc+'/TauID_SF_eta_DeepTau2017v2p1VSe_2016Legacy.root:VTight', 't_id_vs_e_eta_vtight'),
+  (loc+'/TauID_SF_eta_DeepTau2017v2p1VSmu_2016Legacy.root:VLoose', 't_id_vs_mu_eta_vloose'),
+  (loc+'/TauID_SF_eta_DeepTau2017v2p1VSmu_2016Legacy.root:Loose',  't_id_vs_mu_eta_loose'),
+  (loc+'/TauID_SF_eta_DeepTau2017v2p1VSmu_2016Legacy.root:Medium', 't_id_vs_mu_eta_medium'),
+  (loc+'/TauID_SF_eta_DeepTau2017v2p1VSmu_2016Legacy.root:Tight',  't_id_vs_mu_eta_tight'),
+
+]
+
+w.factory('expr::t_eta_bounded("min(2.3,TMath::Abs(@0))" ,t_eta[0])')
+
+for task in histsToWrap:
+  wsptools.SafeWrapHist(w, ['t_eta_bounded'], GetFromTFile(task[0]), name=task[1])
+  uncert_hists = wsptools.UncertsFromHist(GetFromTFile(task[0]))
+  wsptools.SafeWrapHist(w, ['t_eta_bounded'], uncert_hists[0], name=task[1]+'_abs_up')
+  wsptools.SafeWrapHist(w, ['t_eta_bounded'], uncert_hists[1], name=task[1]+'_abs_down')
+  w.factory('expr::%s_up("@1+@0",%s_abs_up,%s)' % (task[1],task[1],task[1]))
+  w.factory('expr::%s_down("@1-@0",%s_abs_down,%s)' % (task[1],task[1],task[1]))
+
 
 # em channel OS/SS factors from UW   
 loc = "inputs/2016/em_osss/"
