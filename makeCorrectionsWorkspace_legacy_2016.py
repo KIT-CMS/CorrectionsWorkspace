@@ -886,7 +886,7 @@ for i in ['vvvloose', 'vvloose', 'vloose', 'loose', 'medium', 'tight', 'vtight',
   w.factory('expr::t_deeptauid_pt_%(i)s_bin5_up("(@0>40&&@0<=500)*@1 + ((@0>40&&@0<=500)==0)*@2",t_pt[0], t_deeptauid_pt_%(i)s_up, t_deeptauid_pt_%(i)s)' % vars())
   w.factory('expr::t_deeptauid_pt_%(i)s_bin5_down("(@0>40&&@0<=500)*@1 + ((@0>40&&@0<=500)==0)*@2",t_pt[0], t_deeptauid_pt_%(i)s_down, t_deeptauid_pt_%(i)s)' % vars())
 
-# em channel OS/SS factors from UW   
+# em channel OS/SS factors from UW
 loc = "inputs/2016/em_osss/"
 
 em_osss_fits = ROOT.TFile(loc+'/osss_em_2016.root')
@@ -924,6 +924,42 @@ for x in ['_unc1_up','_unc1_down','_unc2_up','_unc2_down']:
 w.factory('expr::em_qcd_osss_extrap_up("@0*@1",em_qcd_osss,em_qcd_osss_os_corr)')
 w.factory('expr::em_qcd_osss_extrap_down("@0/@1",em_qcd_osss,em_qcd_osss_os_corr)')
 
+# em channel OS/SS factors from DESY
+loc = "inputs/2016/em_osss/DESY"
+
+em_osss_fits = ROOT.TFile(loc+'/input_qcd_weights.root')
+
+# get linear funtions vs dR for each njets bin
+for njet in [0, 1, 2]:
+  for x in ['', '_rate_up', '_rate_down', '_shape_up', '_shape_down', '_shape2_up', '_shape2_down']:
+    print "Trying to get {}...".format('OS_SS_transfer_factors_%(njet)ijet_2017%(x)s' % vars())
+    func = em_osss_fits.Get('OS_SS_transfer_factors_%(njet)ijet%(x)s' % vars())
+    par1 = func.GetParameter(0)
+    par2 = func.GetParameter(1)
+    par3 = func.GetParameter(2)
+    if njet != 2:
+      w.factory('expr::em_qcd_osss_%(njet)ijet%(x)s_desy("(@0==%(njet)i)*(%(par1)f+%(par2)f*(@1-3)+%(par3)f*((@1-3)*(@1-3)-3))",njets[0],dR[0])' % vars())
+    else:
+      w.factory('expr::em_qcd_osss_%(njet)ijet%(x)s_desy("(@0>=%(njet)i)*(%(par1)f+%(par2)f*(@1-3)+%(par3)f*((@1-3)*(@1-3)-3))",njets[0],dR[0])' % vars())
+
+# get os and ss closure corrections
+
+wsptools.SafeWrapHist(w, ['m_pt', 'e_pt'],
+                      GetFromTFile(loc+'/input_qcd_weights.root:NonClosureCorrection'), 'em_qcd_osss_ss_corr_desy')
+wsptools.SafeWrapHist(w, ['m_pt', 'e_pt'],
+                      GetFromTFile(loc+'/input_qcd_weights.root:IsolationCorrection'), 'em_qcd_osss_os_corr_desy')
+
+w.factory('expr::em_qcd_osss_desy("(@0+@1+@2)*@3*@4",em_qcd_osss_0jet_desy,em_qcd_osss_1jet_desy,em_qcd_osss_2jet_desy,em_qcd_osss_ss_corr_desy,em_qcd_osss_os_corr_desy)' % vars())
+
+# add stat uncertainties as independent shifts
+for x in ['_rate_up','_rate_down','_shape_up','_shape_down', '_shape2_up', '_shape2_down']:
+  w.factory('expr::em_qcd_osss_stat_0jet%(x)s_desy("(@0+@1+@2)*@3*@4",em_qcd_osss_0jet%(x)s_desy,em_qcd_osss_1jet_desy,em_qcd_osss_2jet_desy,em_qcd_osss_ss_corr_desy,em_qcd_osss_os_corr_desy)' % vars())
+  w.factory('expr::em_qcd_osss_stat_1jet%(x)s_desy("(@0+@1+@2)*@3*@4",em_qcd_osss_0jet_desy,em_qcd_osss_1jet%(x)s_desy,em_qcd_osss_2jet_desy,em_qcd_osss_ss_corr_desy,em_qcd_osss_os_corr_desy)' % vars())
+  w.factory('expr::em_qcd_osss_stat_2jet%(x)s_desy("(@0+@1+@2)*@3*@4",em_qcd_osss_0jet_desy,em_qcd_osss_1jet_desy,em_qcd_osss_2jet%(x)s_desy,em_qcd_osss_ss_corr_desy,em_qcd_osss_os_corr_desy)' % vars())
+
+# add iso extrapolation uncertainty
+w.factory('expr::em_qcd_osss_extrap_up_desy("@0*@1",em_qcd_osss_desy,em_qcd_osss_os_corr_desy)')
+w.factory('expr::em_qcd_osss_extrap_down_desy("@0/@1",em_qcd_osss_desy,em_qcd_osss_os_corr_desy)')
 w.importClassCode('CrystalBallEfficiency')
 w.Print()
 w.writeToFile('output/htt_scalefactors_legacy_2016.root')
