@@ -34,7 +34,7 @@ for sample in ["_mc", "_emb"]:
         for dm in ["1pr", "1pr1pi0", "3pr"]:
             for region in ["barrel", "endcap"]:
                 histsToWrap.append(
-                        (loc + 'eff_tauTriggers_2017_v2.root:trg_{trg}{sample}_{dm}_{reg}'.format(trg=trg,
+                        (loc + 'eff_tauTriggers_2017_v3.root:trg_{trg}{sample}_{dm}_{reg}'.format(trg=trg,
                                                                                                sample=sample,
                                                                                                dm=dm,
                                                                                                reg=region),
